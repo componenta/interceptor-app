@@ -1,0 +1,33 @@
+{
+    "name": "componenta/interceptor-app",
+    "description": "Componenta application integration for interceptor cache compilation",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "componenta/app": "^1.0",
+        "componenta/config": "^1.0",
+        "componenta/interceptor": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Componenta\\Interceptor\\App\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Componenta\\Interceptor\\App\\Tests\\": "tests/"
+        }
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "minimum-stability": "stable",
+    "extra": {
+        "componenta": {
+            "config-providers": [
+                "Componenta\\Interceptor\\App\\ConfigProvider"
+            ]
+        }
+    }
+}
