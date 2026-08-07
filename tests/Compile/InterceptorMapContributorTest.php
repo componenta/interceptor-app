@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Componenta\Interceptor\App\Compile\InterceptorMapContributor;
 use Componenta\Interceptor\ConfigKey;
-use Componenta\Interceptor\Tests\Fixture\TargetClass;
+use Componenta\Interceptor\App\Tests\Fixture\TargetClass;
 
 describe('InterceptorMapContributor', function () {
     it('returns the compiled interceptor map config delta', function () {
