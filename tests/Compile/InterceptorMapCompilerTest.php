@@ -6,10 +6,10 @@ use Componenta\Interceptor\AttributeInterceptor;
 use Componenta\Interceptor\CallableContext;
 use Componenta\Interceptor\App\Compile\InterceptorMapCompiler;
 use Componenta\Interceptor\ContextHandler;
-use Componenta\Interceptor\Tests\Fixture\FactoryStub;
-use Componenta\Interceptor\Tests\Fixture\PassThroughExecutor;
-use Componenta\Interceptor\Tests\Fixture\RecordingInterceptor;
-use Componenta\Interceptor\Tests\Fixture\TargetClass;
+use Componenta\Interceptor\App\Tests\Fixture\FactoryStub;
+use Componenta\Interceptor\App\Tests\Fixture\PassThroughExecutor;
+use Componenta\Interceptor\App\Tests\Fixture\RecordingInterceptor;
+use Componenta\Interceptor\App\Tests\Fixture\TargetClass;
 
 function interceptorAppFactory(array &$log): FactoryStub
 {
