@@ -16,8 +16,10 @@ final readonly class InterceptorMapContributor implements CompileCacheContributo
      */
     public function compile(array $classes): array
     {
-        return [
-            ConfigKey::COMPILED_INTERCEPTORS => (new InterceptorMapCompiler())->compile($classes),
-        ];
+        $interceptors = (new InterceptorMapCompiler())->compile($classes);
+
+        return $interceptors === []
+            ? []
+            : [ConfigKey::COMPILED_INTERCEPTORS => $interceptors];
     }
 }

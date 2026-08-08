@@ -12,4 +12,8 @@ describe('InterceptorMapContributor', function () {
 
         expect($delta[ConfigKey::COMPILED_INTERCEPTORS])->toHaveKey(TargetClass::class . '::single');
     });
+
+    it('omits the interceptor section when no metadata is discovered', function () {
+        expect((new InterceptorMapContributor())->compile([]))->toBe([]);
+    });
 });
