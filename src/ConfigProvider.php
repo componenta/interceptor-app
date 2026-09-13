@@ -6,25 +6,22 @@ namespace Componenta\Interceptor\App;
 
 use Componenta\App\ConfigKey as AppConfigKey;
 use Componenta\Config\ConfigProvider as BaseConfigProvider;
-use Componenta\Interceptor\App\Compile\InterceptorMapCompiler;
-use Componenta\Interceptor\App\Compile\InterceptorMapContributor;
+use Componenta\Interceptor\App\Build\InterceptorBuilder;
+use Componenta\Interceptor\App\Build\InterceptorBuilderFactory;
+use Componenta\Interceptor\App\Factory\AttributeInterceptorFactory;
+use Componenta\Interceptor\AttributeInterceptor;
 
 final class ConfigProvider extends BaseConfigProvider
 {
-    protected function getInvokables(): array
+    protected function getFactories(): array
     {
         return [
-            InterceptorMapCompiler::class,
-            InterceptorMapContributor::class,
+            InterceptorBuilder::class => InterceptorBuilderFactory::class,
+            AttributeInterceptor::class => AttributeInterceptorFactory::class,
         ];
     }
-
     protected function getConfig(): array
     {
-        return [
-            AppConfigKey::COMPILE_CACHE_CONTRIBUTORS => [
-                InterceptorMapContributor::class,
-            ],
-        ];
+        return [AppConfigKey::BUILDERS => [InterceptorBuilder::class]];
     }
 }

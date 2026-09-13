@@ -1,47 +1,47 @@
 # Componenta Interceptor App
 
-Application-level compile integration for `componenta/interceptor`. This package turns interceptor attributes into serializable descriptors that can be loaded by the runtime interceptor layer.
+Application build integration for Interceptor 3, App 4, DI 5 and Config 3.
 
-Use it during application cache builds. Runtime code that only invokes interceptors should depend on `componenta/interceptor`.
+Register `Componenta\Interceptor\ConfigProvider` and then `Componenta\Interceptor\App\ConfigProvider`. Composer metadata continues to expose the App provider for generated provider lists.
 
-## Installation
+The provider registers `InterceptorBuilder` in `app.builders`. Run the application's ordinary command:
 
 ```bash
-composer require componenta/interceptor-app
+php bin/console.php app:build
 ```
 
-The package declares `Componenta\Interceptor\App\ConfigProvider` in `extra.componenta.config-providers`.
-When `componenta/composer-plugin` is installed, the provider is added to the generated provider list automatically.
+`list` and `--help` do not create the builder. The builder receives the existing `app.discovery.source` class iterator and the path resolved by `PathResolverInterface`. It creates directories and publishes its own artifact by a temporary file and atomic rename. Source or write failure preserves the previously published file.
 
-## Related Packages
+Configure the path through `Componenta\Interceptor\App\ConfigKey::MAP_FILE` (`interceptors.map_file`). Default: `var/cache/build/interceptors.php`.
 
-| Package | Why it matters here |
-|---|---|
-| `componenta/interceptor` | Executes interceptor chains and consumes compiled descriptors. |
-| `componenta/class-finder` | Finds classes and methods with interceptor attributes. |
-| `componenta/app` | Enables the compiler only when interceptor support is installed and bound. |
+## Artifact and runtime
 
-## What It Adds
+The artifact is a plain array of method signatures and ordered positions of relevant native PHP attributes:
 
-The package provides `Componenta\Interceptor\App\Compile\InterceptorMapCompiler`.
+```php
+return [
+    'App\\Controller::show' => [0, 2],
+    'App\\Controller::plain' => [],
+];
+```
 
-The compiler scans discovered classes for:
+The map stores no instantiated attributes, constructor arguments, services or interceptor instances. Runtime selects native `ReflectionAttribute` objects and calls `newInstance()` on each invocation. This preserves fresh object arguments, target/repeatability checks, exceptions, declaration order and scope behavior.
 
-- `#[Intercept]` attributes on methods
-- attributes that implement interceptor contracts directly
+If an attribute class is unavailable during build, the method is omitted from the map and uses runtime metadata. Runtime rechecks incomplete classification so later autoloader registration can activate the attribute.
 
-It produces a descriptor map that can be passed to `AttributeInterceptor` from `componenta/interceptor`.
+Methods absent from the map and named functions/closures use their own native metadata. Missing, malformed or unreadable artifacts fall back to source metadata. Runtime never invokes a builder or scans application classes. Publish code and its rebuilt artifact together; a structurally valid artifact from an earlier deployment is not a source freshness check.
 
-## Development Mode
+`InterceptorMapCompiler`, `InterceptorMapContributor` and the compile-contributor registration API have been removed. Replace the old integration with this ConfigProvider and rebuild with `app:build`.
 
-In development, interceptor metadata may be discovered from source classes while the application cache is being built. This keeps method-level interception declarative without forcing runtime packages to depend on class scanning.
+## Verification
 
-## Production Mode
+Install sibling packages under `packages`, then:
 
-In production, applications should load the compiled descriptor map. This avoids repeated reflection over methods and keeps interception setup deterministic.
+```bash
+composer --working-dir=integration install
+composer --working-dir=integration test
+composer --working-dir=integration test:packages
+composer --working-dir=integration analyse
+```
 
-The compiler should be enabled only when `componenta/interceptor` is installed and the attribute interceptor service is bound. Optional feature gating is handled by `componenta/app`.
-
-## Boundaries
-
-`componenta/interceptor-app` does not execute interceptor chains. Callable contexts, chain execution, interceptor attributes, factories, and runtime dispatch belong to `componenta/interceptor`; this package owns only descriptor compilation.
+The integration runs actual ConfigProvider/DI, console build, Symfony Serializer, PSR-7 responses and pagination against the local packages.

@@ -1,13 +1,17 @@
 {
     "name": "componenta/interceptor-app",
-    "description": "Componenta application integration for interceptor cache compilation",
+    "description": "Application build integration for native interceptor attribute metadata",
     "type": "library",
     "license": "MIT",
     "require": {
         "php": "^8.4",
-        "componenta/app": "^1.0.2 || ^2.0 || ^3.0.2",
-        "componenta/config": "^2.0.2",
-        "componenta/interceptor": "^1.0 || ^2.0.1"
+        "componenta/app": "^4.0.0",
+        "componenta/config": "^3.0.0",
+        "componenta/interceptor": "^3.0.0",
+        "componenta/di": "^5.0.0",
+        "componenta/class-finder": "^2.0.0",
+        "componenta/path-resolver": "^1.0",
+        "componenta/var-export": "^2.0.0"
     },
     "autoload": {
         "psr-4": {
@@ -20,7 +24,8 @@
         }
     },
     "require-dev": {
-        "pestphp/pest": "^4.0"
+        "pestphp/pest": "^4.0",
+        "componenta/app-console": "^4.0.0"
     },
     "minimum-stability": "stable",
     "extra": {
@@ -28,6 +33,9 @@
             "config-providers": [
                 "Componenta\\Interceptor\\App\\ConfigProvider"
             ]
+        },
+        "branch-alias": {
+            "dev-main": "2.0.x-dev"
         }
     },
     "config": {
@@ -36,7 +44,8 @@
         }
     },
     "scripts": {
-        "test": "@php vendor/bin/pest"
+        "test": "@php vendor/bin/pest",
+        "test:integration": "@composer --working-dir=integration test"
     },
     "prefer-stable": true
 }

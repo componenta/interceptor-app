@@ -1,0 +1,11 @@
+parameters:
+    level: max
+    treatPhpDocTypesAsCertain: false
+    tmpDir: .phpstan.cache
+    paths:
+        - ../../interceptor/src
+        - ../src
+        - ../../http-respond-interceptor/src
+        - ../../http-paginate-interceptor/src
+        - ../../serialize-interceptor/src
+        - ../../http-responder/src/ResponderConfigProvider.php
