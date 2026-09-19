@@ -5,16 +5,23 @@ declare(strict_types=1);
 namespace Componenta\Interceptor\App\Build;
 
 use Componenta\App\Build\ApplicationBuilderInterface;
+use Componenta\App\Build\PhpMapFile;
+use Componenta\App\Build\ApplicationBuildCleanerInterface;
 use Componenta\ClassFinder\ClassIteratorInterface;
 use Componenta\Interceptor\Internal\AttributeMetadata;
 use Componenta\VarExport\VarExport;
 use ErrorException;
 use RuntimeException;
 
-final readonly class InterceptorBuilder implements ApplicationBuilderInterface
+final readonly class InterceptorBuilder implements ApplicationBuilderInterface, ApplicationBuildCleanerInterface
 {
     public function __construct(private ClassIteratorInterface $classes, private string $file)
     {
+    }
+
+    public function clean(): void
+    {
+        PhpMapFile::remove($this->file);
     }
 
     public function build(): void
