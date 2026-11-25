@@ -34,10 +34,10 @@ final class BuildInterceptedTarget
     }
 }
 
-function interceptorBuildContainer(string $root, ClassIterator $source): \Componenta\Config\ContainerValue
+function interceptorBuildContainer(string $root, ClassIterator $source, bool $forceSource = false): \Componenta\Config\ContainerValue
 {
     $composition = (new ConfigFactory())->create(
-        new Environment([]),
+        new Environment(['APP_DISCOVERY_SOURCE' => $forceSource]),
         new \Componenta\App\ConfigProvider(),
         new \Componenta\App\Console\ConfigProvider(),
         new \Componenta\Interceptor\ConfigProvider(),
@@ -196,6 +196,25 @@ it('keeps attributes available for late loading after building and warming the p
         if (is_file($root . '/interceptors.php')) {
             unlink($root . '/interceptors.php');
         }
+        rmdir($root);
+    }
+});
+
+
+it('ignores stale negative interceptor metadata in explicit source recovery mode', function (): void {
+    $root = sys_get_temp_dir() . '/interceptor_recovery_' . bin2hex(random_bytes(8));
+    mkdir($root);
+    $file = $root . '/interceptors.php';
+    $contents = '<?php return ["BuildInterceptedTarget::run" => []];';
+    file_put_contents($file, $contents);
+    try {
+        $ordinary = interceptorBuildContainer($root, new ClassIterator([]))->get(PipelineInterface::class);
+        expect($ordinary->call([new BuildInterceptedTarget(), 'run']))->toBe('value');
+        $recovery = interceptorBuildContainer($root, new ClassIterator([]), true)->get(PipelineInterface::class);
+        expect($recovery->call([new BuildInterceptedTarget(), 'run']))->toBe('1:value');
+        expect(file_get_contents($file))->toBe($contents);
+    } finally {
+        unlink($file);
         rmdir($root);
     }
 });
