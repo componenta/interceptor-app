@@ -5,7 +5,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.4",
-        "componenta/app": "^5.0.0",
+        "componenta/app": "^5.0.0 || ^6.0.0",
         "componenta/config": "^3.0.0",
         "componenta/interceptor": "^3.0.0",
         "componenta/di": "^5.0.3",
@@ -25,7 +25,7 @@
     },
     "require-dev": {
         "pestphp/pest": "^4.0",
-        "componenta/app-console": "^5.0.0"
+        "componenta/app-console": "^5.0.0 || ^6.0.0"
     },
     "minimum-stability": "stable",
     "extra": {
