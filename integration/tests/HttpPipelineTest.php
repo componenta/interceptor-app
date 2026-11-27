@@ -8,7 +8,9 @@ use Componenta\Config\ConfigFactory;
 use Componenta\Config\Environment;
 use Componenta\DI\ContainerFactory;
 use Componenta\Http\ResponderConfigProvider;
-use Componenta\Interceptor\App\Build\InterceptorBuilder;
+use Componenta\App\Build\ApplicationBuildOrchestrator;
+use Componenta\App\Build\BuildStore;
+use Componenta\App\Build\PreparedBuild;
 use Componenta\Interceptor\AttributeInterceptor;
 use Componenta\Interceptor\CallableContext;
 use Componenta\Interceptor\Http\Attribute\Respond;
@@ -59,12 +61,11 @@ final class IntegrationArrayableNormalizer implements NormalizerInterface
         return $data->toArray();
     }
 }
-it('runs lazy app build and preserves the HTTP pipeline before and after building', function (): void {
+it('preserves the native HTTP pipeline without building interceptor metadata', function (): void {
     $root = sys_get_temp_dir() . '/interceptor_http_' . bin2hex(random_bytes(8));
     mkdir($root);
     $reads = 0;
-    $builderConstructions = 0;
-    $create = static function (bool $runtimeOnly = false) use ($root, &$reads, &$builderConstructions) {
+    $create = static function (bool $runtimeOnly = false) use ($root, &$reads) {
         $source = new ClassIterator((static function () use ($runtimeOnly, &$reads): Generator {
             if ($runtimeOnly) {
                 throw new RuntimeException('runtime discovery is forbidden');
@@ -80,7 +81,7 @@ it('runs lazy app build and preserves the HTTP pipeline before and after buildin
             new \Componenta\Interceptor\ConfigProvider(),
             new \Componenta\Interceptor\App\ConfigProvider(),
             new ResponderConfigProvider(),
-            static function () use ($root, $source, $http, &$builderConstructions): array {
+            static function () use ($root, $source, $http): array {
                 return [
                     'interceptors.map_file' => 'interceptors.php',
                     \Componenta\Interceptor\ConfigKey::HTTP_INTERCEPTORS => [AttributeInterceptor::class],
@@ -92,11 +93,11 @@ it('runs lazy app build and preserves the HTTP pipeline before and after buildin
                             StreamFactoryInterface::class => $http,
                             SerializerInterface::class => new Serializer([new IntegrationArrayableNormalizer()], [new JsonEncoder()]),
                         ],
-                        \Componenta\Config\ConfigKey::DELEGATORS => [
-                            InterceptorBuilder::class => [static function (InterceptorBuilder $builder) use (&$builderConstructions): InterceptorBuilder {
-                                ++$builderConstructions;
-                                return $builder;
-                            }],
+                        \Componenta\Config\ConfigKey::FACTORIES => [
+                            BuildStore::class => static fn (): BuildStore => new BuildStore($root . '/build'),
+                            BuildCommand::class => static fn (\Componenta\Config\ContainerValue $container): BuildCommand => new BuildCommand(
+                                static fn (): PreparedBuild => $container->get(ApplicationBuildOrchestrator::class)->build(),
+                            ),
                         ],
                     ],
                 ];
@@ -124,14 +125,15 @@ it('runs lazy app build and preserves the HTTP pipeline before and after buildin
         foreach ([['command' => 'list'], ['command' => 'app:build', '--help' => true]] as $input) {
             expect($application->run(new ArrayInput($input), $output))->toBe(0);
         }
-        expect($reads)->toBe(0)->and($builderConstructions)->toBe(0);
+        expect($reads)->toBe(0);
         expect($application->run(new ArrayInput(['command' => 'app:build']), $output))->toBe(0);
-        expect($reads)->toBe(1)->and($builderConstructions)->toBe(1);
+        expect($reads)->toBe(0)->and(is_file($root . '/interceptors.php'))->toBeFalse();
         $prepared = $create(true)->get(PipelineInterface::class);
         expect($run($prepared))->toBe($expected)->and($run($prepared))->toBe($expected);
     } finally {
-        if (is_file($root . '/interceptors.php')) {
-            unlink($root . '/interceptors.php');
+        $entries = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+        foreach ($entries as $entry) {
+            $entry->isDir() ? rmdir($entry->getPathname()) : unlink($entry->getPathname());
         }
         rmdir($root);
     }

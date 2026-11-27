@@ -1,47 +1,57 @@
 # Componenta Interceptor App
 
-Application build integration for Interceptor 3, App 4, DI 5 and Config 3.
+Interceptor App 4 is a migration provider for applications upgrading to
+Interceptor 4, Config 4 and PHP 8.5.13+. Native interceptor metadata belongs to
+`componenta/interceptor`; this package no longer has an application build phase.
 
-Register `Componenta\Interceptor\ConfigProvider` and then `Componenta\Interceptor\App\ConfigProvider`. Composer metadata continues to expose the App provider for generated provider lists.
+## Runtime registration
 
-The provider registers `InterceptorBuilder` in `app.builders`. Run the application's ordinary command:
+Register `Componenta\Interceptor\ConfigProvider`. It owns the native attribute
+interceptor, callable-context factory and HTTP pipeline factory. Configure
+`Componenta\Interceptor\ConfigKey::HTTP_INTERCEPTORS` in the application as usual.
 
-```bash
-php bin/console.php app:build
-```
+Existing applications may continue registering
+`Componenta\Interceptor\App\ConfigProvider`. This provider adds no factories or
+builders, and its Composer provider metadata remains available during migration.
+New applications can omit `componenta/interceptor-app` entirely.
 
-`list` and `--help` do not create the builder. The builder receives the existing `app.discovery.source` class iterator and the path resolved by `PathResolverInterface`. It creates directories and publishes its own artifact by a temporary file and atomic rename. Source or write failure preserves the previously published file.
+Interceptor 4 caches native attribute descriptors at runtime. It materializes
+attributes and constructor arguments only when the corresponding continuation is
+reached. Each invocation receives fresh attribute instances; service interceptor
+lifetimes remain owned by the configured factory and container. Methods with
+incomplete attribute classification are rechecked when a later autoloader makes
+an attribute class available. No application class scan or metadata artifact is
+needed for this behavior.
 
-Configure the path through `Componenta\Interceptor\App\ConfigKey::MAP_FILE` (`interceptors.map_file`). Default: `var/cache/build/interceptors.php`.
+## Migration from Interceptor App 3
 
-## Artifact and runtime
+Remove registrations and direct calls for:
 
-The artifact is a plain array of method signatures and ordered positions of relevant native PHP attributes:
+- `Build\InterceptorBuilder` and `Build\InterceptorBuilderFactory`.
+- `Factory\AttributeInterceptorFactory` from this package; retain the factory from
+  the base Interceptor provider.
+- `ConfigKey::MAP_FILE`, `ConfigKey::DEFAULT_MAP_FILE`, and `interceptors.map_file`.
 
-```php
-return [
-    'App\\Controller::show' => [0, 2],
-    'App\\Controller::plain' => [],
-];
-```
+The old `interceptors.php` files are ignored. They may be removed as deployment
+cleanup; the new provider never reads, rewrites or removes them. `app:build` does
+not produce an interceptor artifact. `app:clean` handles the application store,
+without requiring any package-specific interceptor cleanup.
 
-The map stores no instantiated attributes, constructor arguments, services or interceptor instances. Runtime selects native `ReflectionAttribute` objects and calls `newInstance()` on each invocation. This preserves fresh object arguments, target/repeatability checks, exceptions, declaration order and scope behavior.
-
-If an attribute class is unavailable during build, the method is omitted from the map and uses runtime metadata. Runtime rechecks incomplete classification so later autoloader registration can activate the attribute.
-
-Methods absent from the map and named functions/closures use their own native metadata. Missing, malformed or unreadable artifacts fall back to source metadata. Runtime never invokes a builder or scans application classes. Publish code and its rebuilt artifact together; a structurally valid artifact from an earlier deployment is not a source freshness check.
-
-`InterceptorMapCompiler`, `InterceptorMapContributor` and the compile-contributor registration API have been removed. Replace the old integration with this ConfigProvider and rebuild with `app:build`.
+This also replaces the older `InterceptorMapCompiler`, `InterceptorMapContributor`
+and compile-contributor registration APIs. Attribute positions are not a public
+Interceptor 4 preparation contract.
 
 ## Verification
 
-Install sibling packages under `packages`, then:
-
 ```bash
+composer test
 composer --working-dir=integration install
 composer --working-dir=integration test
-composer --working-dir=integration test:packages
-composer --working-dir=integration analyse
 ```
 
-The integration runs actual ConfigProvider/DI, console build, Symfony Serializer, PSR-7 responses and pagination against the local packages.
+The package tests compose the actual Config 4 / DI 6 / Interceptor 4 providers and
+verify fresh attributes, late autoloading, ignored legacy maps and application
+build behavior without interceptor discovery. The optional integration suite
+exercises Symfony Serializer, PSR-7 responses and pagination. Its sibling package
+checkouts must match the target versions in `integration/composer.json`; the
+version map does not imply that those releases have already been published.
